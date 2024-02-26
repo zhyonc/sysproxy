@@ -19,3 +19,19 @@
 
 # Go workspace file
 go.work
+
+# Temp file
+config.toml
+/resources/user_rule.txt
+/resources/Hierarchy.vsdx
+gfwlist.txt
+user_rule.txt
+pac.js
+pac_temp.js
+
+# Vscode
+.vs
+.vscode
+
+# Dependencies
+!liblcl.dll
