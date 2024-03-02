@@ -5,6 +5,5 @@ type Menu struct {
 	Version              string
 	OutboundCheckedIndex int
 	InboundCheckedIndex  int
-	AutoProxy            bool
 	AutoStart            bool
 }

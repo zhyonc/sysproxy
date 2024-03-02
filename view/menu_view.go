@@ -10,12 +10,16 @@ import (
 )
 
 type menuView struct {
-	controller   controller.MenuController
-	logView      View
-	ruleView     View
-	inboundView  BoundView
-	outboundView BoundView
-	popupMenu    *vcl.TPopupMenu
+	controller         controller.MenuController
+	logView            View
+	ruleView           View
+	inboundView        BoundView
+	outboundView       BoundView
+	trayIcon           *vcl.TTrayIcon
+	popupMenu          *vcl.TPopupMenu
+	isDisabled         bool
+	outboundIndexCache int
+	inboundIndexCache  int
 }
 
 func NewMenuView(controller controller.MenuController, logView, ruleView View, inboundView, outboundView BoundView) *menuView {
@@ -29,7 +33,9 @@ func NewMenuView(controller controller.MenuController, logView, ruleView View, i
 	appName := v.controller.GetMenu().AppName
 	v.inboundView.SetRefreshTagsFunc(v.onRefreshTags)
 	v.outboundView.SetRefreshTagsFunc(v.onRefreshTags)
-	v.drawPopupMenu(newTrayIcon(newMainForm(), appName))
+	v.trayIcon = newTrayIcon(newMainForm(), appName)
+	v.trayIcon.SetOnClick(v.onTrayIconClick)
+	v.drawPopupMenu()
 	return v
 }
 
@@ -53,8 +59,26 @@ func newTrayIcon(form *vcl.TForm, appName string) *vcl.TTrayIcon {
 	return trayIcon
 }
 
-func (v *menuView) drawPopupMenu(trayIcon *vcl.TTrayIcon) {
-	v.popupMenu = vcl.NewPopupMenu(trayIcon)
+func (v *menuView) onTrayIconClick(sender vcl.IObject) {
+	menu := v.controller.GetMenu()
+	var outboundIndex int = 0
+	var inboundIndex int = 0
+	if v.isDisabled {
+		outboundIndex = v.outboundIndexCache
+		inboundIndex = v.inboundIndexCache
+	} else {
+		v.outboundIndexCache = menu.OutboundCheckedIndex
+		v.inboundIndexCache = menu.InboundCheckedIndex
+	}
+	outbound := vcl.AsMenuItem(v.popupMenu.FindComponent(outboundName))
+	inbound := vcl.AsMenuItem(v.popupMenu.FindComponent(inboundName))
+	outbound.Items(int32(outboundIndex)).Click()
+	inbound.Items(int32(inboundIndex)).Click()
+	v.isDisabled = !v.isDisabled
+}
+
+func (v *menuView) drawPopupMenu() {
+	v.popupMenu = vcl.NewPopupMenu(v.trayIcon)
 	var index int = 0
 	v.popupMenu.Items().Add(newMenuItem(v.popupMenu, &index, outboundName, outboundText, nil))
 	v.popupMenu.Items().Add(newMenuItem(v.popupMenu, &index, inboundName, inboundText, nil))
@@ -63,8 +87,8 @@ func (v *menuView) drawPopupMenu(trayIcon *vcl.TTrayIcon) {
 	v.popupMenu.Items().Add(v.newSettingMenuItem(v.popupMenu, &index, settingName, settingText, nil))
 	v.popupMenu.Items().Add(newMenuItem(v.popupMenu, &index, aboutName, aboutText, v.onAboutMenuItemClick))
 	v.popupMenu.Items().Add(newMenuItem(v.popupMenu, &index, exitName, exitText, v.onExitMenuItemClick))
-	trayIcon.SetPopupMenu(v.popupMenu)
-	trayIcon.SetVisible(true)
+	v.trayIcon.SetPopupMenu(v.popupMenu)
+	v.trayIcon.SetVisible(true)
 }
 
 func (v *menuView) newSettingMenuItem(parent vcl.IComponent, index *int, name, title string, clickEvent vcl.TNotifyEvent) *vcl.TMenuItem {
@@ -73,9 +97,6 @@ func (v *menuView) newSettingMenuItem(parent vcl.IComponent, index *int, name, t
 	settingMenuItem.Add(newMenuItem(settingMenuItem, &subIndex, settingOutboundName, settingOutboundText, v.showForm))
 	settingMenuItem.Add(newMenuItem(settingMenuItem, &subIndex, settingInboundName, settingInboundText, v.showForm))
 	menu := v.controller.GetMenu()
-	autoProxyMenuItem := newMenuItem(settingMenuItem, &subIndex, settingAutoProxyName, settingAutoProxyText, v.onSettingAutoProxyClick)
-	autoProxyMenuItem.SetChecked(menu.AutoProxy)
-	settingMenuItem.Add(autoProxyMenuItem)
 	autoStartMenuItem := newMenuItem(settingMenuItem, &subIndex, settingAutoStartName, settingAutoStartText, v.onSettingAutoStartClick)
 	autoStartMenuItem.SetChecked(menu.AutoStart)
 	settingMenuItem.Add(autoStartMenuItem)
@@ -85,6 +106,10 @@ func (v *menuView) newSettingMenuItem(parent vcl.IComponent, index *int, name, t
 func (v *menuView) Run() {
 	v.onRefreshTags(outboundName, v.controller.GetOutboundTags())
 	v.onRefreshTags(inboundName, v.controller.GetInboundTags())
+	menu := v.controller.GetMenu()
+	if menu.InboundCheckedIndex == 0 && menu.OutboundCheckedIndex == 0 {
+		v.isDisabled = true
+	}
 	vcl.Application.Run()
 }
 
@@ -100,14 +125,6 @@ func (v *menuView) showForm(sender vcl.IObject) {
 	case settingOutboundText:
 		v.outboundView.Show()
 	}
-}
-
-func (v *menuView) onSettingAutoProxyClick(sender vcl.IObject) {
-	menuItem := vcl.AsMenuItem(sender)
-	menu := v.controller.GetMenu()
-	checked := !menu.AutoProxy
-	menuItem.SetChecked(checked)
-	menu.AutoProxy = checked
 }
 
 func (v *menuView) onSettingAutoStartClick(sender vcl.IObject) {
@@ -159,22 +176,17 @@ func (v *menuView) onRefreshTags(name string, tags []string) {
 		boundMenuItem.Add(newMenuItem(boundMenuItem, &index, "", tag, v.onBoundSubMenuItemClick))
 	}
 	menu := v.controller.GetMenu()
-	if menu.AutoProxy {
-		var subMenuItem *vcl.TMenuItem
-		if boundMenuItem.Name() == outboundName {
-			subMenuItem = boundMenuItem.Items(int32(menu.OutboundCheckedIndex))
-		} else if boundMenuItem.Name() == inboundName {
-			subMenuItem = boundMenuItem.Items(int32(menu.InboundCheckedIndex))
-		} else {
-			subMenuItem = nil
-		}
-		if subMenuItem != nil {
-			subMenuItem.Click()
-			return
-		}
+	var subMenuItem *vcl.TMenuItem
+	if boundMenuItem.Name() == outboundName {
+		subMenuItem = boundMenuItem.Items(int32(menu.OutboundCheckedIndex))
+	} else if boundMenuItem.Name() == inboundName {
+		subMenuItem = boundMenuItem.Items(int32(menu.InboundCheckedIndex))
+	} else {
+		subMenuItem = nil
 	}
-	disableMenuItem := boundMenuItem.Items(0)
-	disableMenuItem.Click()
+	if subMenuItem != nil {
+		subMenuItem.Click()
+	}
 }
 
 func (v *menuView) onBoundSubMenuItemClick(sender vcl.IObject) {
@@ -200,4 +212,27 @@ func (v *menuView) onBoundSubMenuItemClick(sender vcl.IObject) {
 		item.SetChecked(false)
 	}
 	menuItem.SetChecked(true)
+	menu := v.controller.GetMenu()
+	if parentMenuItem.Name() == outboundName {
+		menu.OutboundCheckedIndex = menuItem.Tag()
+	} else if parentMenuItem.Name() == inboundName {
+		menu.InboundCheckedIndex = menuItem.Tag()
+	}
+	_ = v.controller.SaveConfig()
+	v.refreshIcon()
+}
+
+func (v *menuView) refreshIcon() {
+	menu := v.controller.GetMenu()
+	newIcon := vcl.NewIcon()
+	if menu.OutboundCheckedIndex == 0 && menu.InboundCheckedIndex == 0 {
+		newIcon.LoadFromBytes(resources.IconData)
+	} else if menu.OutboundCheckedIndex > 0 && menu.InboundCheckedIndex == 0 {
+		newIcon.LoadFromBytes(resources.IconOData)
+	} else if menu.OutboundCheckedIndex == 0 && menu.InboundCheckedIndex > 0 {
+		newIcon.LoadFromBytes(resources.IconIData)
+	} else {
+		newIcon.LoadFromBytes(resources.IconIOData)
+	}
+	v.trayIcon.SetIcon(newIcon)
 }

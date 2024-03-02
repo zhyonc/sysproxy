@@ -86,16 +86,17 @@ func (s *baseService) disconnect(conn net.Conn) {
 
 func (s *baseService) disconnectAll() {
 	s.conns.Range(func(key, _ any) bool {
-		s.conns.Delete(key)
 		conn, ok := key.(net.Conn)
 		if !ok {
 			log.Printf("Error disconnect all because dessert net.Conn failed")
+			return true
 		} else {
 			err := conn.Close()
 			if err != nil {
 				log.Printf("Error disconnect: %v", err)
 			}
 		}
+		s.conns.Delete(key)
 		return true
 	})
 }

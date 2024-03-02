@@ -197,7 +197,7 @@ func HookAutoStart(checked bool, appName string) error {
 	if err != nil {
 		return err
 	}
-	run := "cmd /c cd " + filepath.Dir(ex) + " && start " + filepath.Base(ex)
+	run := "cmd /c " + filepath.VolumeName(ex) + " && cd " + filepath.Dir(ex) + " && start " + filepath.Base(ex)
 	if checked {
 		// Set the application to auto start
 		if err := key.SetStringValue(appName, run); err != nil {

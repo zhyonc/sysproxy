@@ -1,4 +1,4 @@
-<img src="/resources/icon.png" alt="[logo]" width="48"/> sysproxy
+<img src="/resources/Icon.png" alt="[logo]" width="48"/> sysproxy
 =======================
 ### What it is
 Windows system proxy forward tool that display as tray menu
@@ -28,6 +28,12 @@ Download the compiled version from [release page](https://github.com/zhyonc/sysp
 - Click Log menu item to open log form
 - If everything is ok, you can see the connection status in the log form
 ![Outbound](/resources/Outbound.png)
+#### Proxy Toggle
+Click the tray icon to enable/disable proxy
+- <img src="/resources/Icon.png" alt="[Icon]" width="16" height="16"/> Both inbound and outbound is disabled
+- <img src="/resources/IconI.png" alt="[IconI]" width="16" height="16"/> Only inbound is enabled
+- <img src="/resources/IconO.png" alt="[IconO]" width="16" height="16"/> Only outbound is enabled
+- <img src="/resources/IconIO.png" alt="[IconIO]" width="16" height="16"/> Both inbound and outbound is enabled
 ### Build
 - Upgrade go version to above 1.9.2
 - Download package tool from [rsrc](https://github.com/akavel/rsrc/releases)

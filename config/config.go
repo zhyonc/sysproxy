@@ -9,7 +9,7 @@ import (
 
 const (
 	appName string = "sysproxy"
-	version string = "0.1.1"
+	version string = "0.2.0"
 )
 
 var path string = "config.toml"
@@ -31,7 +31,7 @@ func NewConfig() *Config {
 		}
 	}
 	if conf.Menu.Version < version {
-		upgradeConfig(conf)
+		conf = upgradeConfig(conf)
 	}
 	return conf
 }
@@ -46,7 +46,6 @@ func defualtConfig() *Config {
 			InboundCheckedIndex:  0,
 			OutboundCheckedIndex: 0,
 			AutoStart:            false,
-			AutoProxy:            false,
 		},
 	}
 	return conf
@@ -57,7 +56,6 @@ func upgradeConfig(oldConf *Config) *Config {
 	newConf.OutboundList = oldConf.OutboundList
 	newConf.InboundList = oldConf.InboundList
 	newConf.Menu.AutoStart = oldConf.Menu.AutoStart
-	newConf.Menu.AutoProxy = oldConf.Menu.AutoProxy
 	ok := newConf.Save()
 	if !ok {
 		log.Println("update config failed")

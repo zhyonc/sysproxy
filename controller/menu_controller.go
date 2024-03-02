@@ -48,44 +48,41 @@ func (c *menuController) GetInboundTags() []string {
 
 // SwitchOutbound implements MenuController.
 func (c *menuController) SwitchOutbound(index int) error {
-	c.conf.Menu.OutboundCheckedIndex = index // for auto proxy when restart
-	if c.service != nil {
-		c.service.StopService()
-	}
-	if index == 0 {
-		c.service = nil
-		return nil
-	}
-	if index < 1 || index > len(c.conf.OutboundList) {
+	if index < 0 || index > len(c.conf.OutboundList) {
 		return fmt.Errorf("can't find outbound at %d", index)
 	}
-	outbound := c.conf.OutboundList[index-1] // outbound list don't contain disable tag
-	if outbound.SrcProto == service.PAC || outbound.SrcProto == service.HTTP {
-		err := service.PACService.CreatePACTempFile(outbound)
-		if err != nil {
-			return err
-		}
-		c.service = service.NewHttpService(outbound)
-	} else if outbound.SrcProto == service.SOCKS5 {
-		c.service = service.NewSocks5Service(outbound)
-	} else {
-		return fmt.Errorf("unknown src protocol at %d", index)
+	if c.service != nil {
+		c.service.StopService()
+		c.service = nil
 	}
-	go c.service.StartService()
+	if index > 0 {
+		outbound := c.conf.OutboundList[index-1] // OutboundList don't include disable tag
+		if outbound.SrcProto == service.PAC || outbound.SrcProto == service.HTTP {
+			err := service.PACService.CreatePACTempFile(outbound)
+			if err != nil {
+				return err
+			}
+			c.service = service.NewHttpService(outbound)
+		} else if outbound.SrcProto == service.SOCKS5 {
+			c.service = service.NewSocks5Service(outbound)
+		} else {
+			return fmt.Errorf("unknown src protocol at %d", index)
+		}
+		go c.service.StartService()
+	}
 	return nil
 }
 
 // SwitchInbound implements MenuController.
 func (c *menuController) SwitchInbound(index int) error {
-	c.conf.Menu.InboundCheckedIndex = index // for auto proxy when restart
+	if index < 0 || index > len(c.conf.InboundList) {
+		return fmt.Errorf("can't find inbound at %d", index)
+	}
 	if index == 0 {
 		util.ClearProxy()
 		return nil
 	}
-	if index < 1 || index > len(c.conf.InboundList) {
-		return fmt.Errorf("can't find inbound at %d", index)
-	}
-	inbound := c.conf.InboundList[index-1] // inbound list don't contain disable tag
+	inbound := c.conf.InboundList[index-1] // InboundList don't include disable tag
 	switch inbound.DstProto {
 	case service.PAC:
 		util.EnablePAC(inbound.DstIP, inbound.DstPort)

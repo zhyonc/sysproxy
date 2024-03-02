@@ -12,6 +12,7 @@ type MenuController interface {
 	SwitchInbound(index int) error
 	ToggleAutoStart() error
 	OpenAboutURL()
+	SaveConfig() bool
 	Exit() string
 }
 
