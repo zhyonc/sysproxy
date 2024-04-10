@@ -13,7 +13,9 @@ Download the compiled version from [release page](https://github.com/zhyonc/sysp
 
 ### How to use
 #### Inbound
-- If you don't want to use system proxy, not need to set inbound
+The "inbound" setting represents the configuration of the System Proxy.  
+Therefore the changes in this section will affect to all processes that uses the global Internet configuration.  
+If you don't want to use system proxy, not need to set "inbound".
 - Click Setting menu item to open inbound form
 - Input and add inbound info that controls system proxy
 - After modified inbound list, don't forget to click update button
@@ -21,6 +23,8 @@ Download the compiled version from [release page](https://github.com/zhyonc/sysp
 - After the tag was selected, call win+R and enter inetcpl.cpl to see the LAN changes
 ![Inbound](/resources/Inbound.png)
 #### Outbound
+The "outbound" setting represents the different proxy configurations of this program.  
+You can forward the Inbound to any of these proxies, or use directly them from any process configured to use it.
 - Click Setting menu item to open outbound form
 - Input and add outbound info that forward inbound or other proxy chain
 - After modified outbound list, don't forget to click update button
