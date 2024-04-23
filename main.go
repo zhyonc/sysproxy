@@ -3,6 +3,7 @@ package main
 import (
 	"sysproxy/config"
 	"sysproxy/controller"
+	"sysproxy/service"
 	"sysproxy/util"
 	"sysproxy/view"
 )
@@ -12,6 +13,7 @@ func main() {
 		return
 	}
 	conf := config.NewConfig()
+	service.NewPACService(conf)
 	menuController := controller.NewMenuController(conf)
 	logController := controller.NewLogController()
 	logView := view.NewLogView(logController)

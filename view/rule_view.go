@@ -41,6 +41,7 @@ func (v *RuleView) DrawControls() {
 	v.memo.SetParent(v.form)
 	v.memo.SetName("RuleMemo")
 	v.memo.SetAlign(types.AlClient)
+	v.memo.SetScrollBars(types.TScrollStyle(2))
 	v.memo.Clear()
 }
 

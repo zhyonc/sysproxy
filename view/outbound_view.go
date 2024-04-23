@@ -46,6 +46,7 @@ func (v *outboundView) GetColRects() []Rect {
 		{CenterX: 0, CenterY: 0, Width: 50, Height: 25},
 		{CenterX: 0, CenterY: 0, Width: 50, Height: 25},
 		{CenterX: 0, CenterY: 0, Width: 50, Height: 25},
+		{CenterX: 0, CenterY: 0, Width: 50, Height: 25},
 	}
 	for i := 0; i < len(rects)-1; i++ {
 		rects[i+1].CenterX = rects[i].CenterX + rects[i].Width
@@ -122,6 +123,11 @@ func (v *outboundView) ClearEditText() {
 	v.dstProto.SetText("")
 	v.dstIP.SetText("")
 	v.dstPort.SetText("")
+}
+
+// CopyBound implements IChild.
+func (v *outboundView) CopyBound(input []string) {
+	v.controller.AddBound(input)
 }
 
 // AddBound implements IChild.

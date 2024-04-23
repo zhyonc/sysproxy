@@ -6,4 +6,5 @@ type Menu struct {
 	OutboundCheckedIndex int
 	InboundCheckedIndex  int
 	AutoStart            bool
+	EnableGFWList        bool
 }

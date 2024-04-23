@@ -24,6 +24,7 @@ type IChild interface {
 	SetDefaultText()
 	ClearEditText()
 	AddBound() []string
+	CopyBound(input []string)
 	UpdateBound(rowIndex int, input []string)
 	DeleteBound(rowIndex int)
 	UpBound(rowIndex int)
@@ -101,8 +102,8 @@ func (v *boundView) drawDataBox() int32 {
 }
 
 func (v *boundView) drawDataRows() {
-	bounds := v.GetBounds()
-	rects := v.GetColRects()
+	bounds := v.IChild.GetBounds()
+	rects := v.IChild.GetColRects()
 	length := len(rects)
 	for rowIndex, cols := range bounds {
 		v.drawDataCols(rowIndex, cols, rects, length)
@@ -115,6 +116,7 @@ func (v *boundView) drawDataCols(rowIndex int, cols []string, rects []Rect, leng
 	panel.SetTag(rowIndex)
 	_ = newLabel(panel, strconv.Itoa(rowIndex), rects[0])
 	v.IChild.NewDataControls(panel, cols, rects)
+	newButton(panel, CopyButtonText, rects[length-5], v.onCopyButtonClick)
 	newButton(panel, UpdateButtonText, rects[length-4], v.onUpdateButtonClick)
 	newButton(panel, DeleteButtonText, rects[length-3], v.onDeleteButtonClick)
 	newButton(panel, PageUpButtonText, rects[length-2], v.onUpButtonClick)
@@ -139,6 +141,31 @@ func (v *boundView) onDefaultButtonClick(sender vcl.IObject) {
 
 func (v *boundView) onClearButtonClick(sender vcl.IObject) {
 	v.IChild.ClearEditText()
+}
+
+func (v *boundView) onCopyButtonClick(sender vcl.IObject) {
+	parent := vcl.AsButton(sender).Parent()
+	rowIndex := parent.Tag()
+	panel := v.dataPanels[rowIndex]
+	input := make([]string, 0)
+	for i := int32(0); i < panel.ControlCount(); i++ {
+		control := panel.Controls(i)
+		if control.Is().Edit() {
+			edit := vcl.AsEdit(control)
+			input = append(input, edit.Text())
+		}
+		if control.Is().ComboBox() {
+			comboBox := vcl.AsComboBox(control)
+			input = append(input, comboBox.Text())
+		}
+	}
+	v.IChild.CopyBound(input)
+	bounds := v.IChild.GetBounds()
+	rowIndex = len(bounds) - 1
+	rects := v.IChild.GetColRects()
+	length := len(rects)
+	v.drawDataCols(rowIndex, input, rects, length)
+	v.scrollBox.Invalidate()
 }
 
 func (v *boundView) onUpdateButtonClick(sender vcl.IObject) {

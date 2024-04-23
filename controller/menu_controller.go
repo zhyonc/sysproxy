@@ -101,6 +101,11 @@ func (c *menuController) ToggleAutoStart() error {
 	return util.HookAutoStart(c.conf.Menu.AutoStart, c.conf.Menu.AppName)
 }
 
+// ToggleEnableGFWList implements MenuController.
+func (c *menuController) ToggleEnableGFWList() {
+	service.PACService.SetEnableGFWList(c.conf.Menu.EnableGFWList)
+}
+
 // OpenAboutURL implements MenuController.
 func (c *menuController) OpenAboutURL() {
 	util.OpenURL(aboutURL)

@@ -9,7 +9,7 @@ import (
 
 const (
 	appName string = "sysproxy"
-	version string = "0.2.0"
+	version string = "0.2.1"
 )
 
 var path string = "config.toml"
@@ -46,6 +46,7 @@ func defualtConfig() *Config {
 			InboundCheckedIndex:  0,
 			OutboundCheckedIndex: 0,
 			AutoStart:            false,
+			EnableGFWList:        false,
 		},
 	}
 	return conf

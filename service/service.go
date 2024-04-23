@@ -23,4 +23,5 @@ type PacService interface {
 	CreatePACTempFile(outbound config.Outbound) error
 	GetUserRule() []string
 	SaveUserRule(rule string) error
+	SetEnableGFWList(enableGFWList bool)
 }

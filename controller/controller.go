@@ -11,6 +11,7 @@ type MenuController interface {
 	SwitchOutbound(index int) error
 	SwitchInbound(index int) error
 	ToggleAutoStart() error
+	ToggleEnableGFWList()
 	OpenAboutURL()
 	SaveConfig() bool
 	Exit() string

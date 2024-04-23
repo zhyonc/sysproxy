@@ -26,24 +26,22 @@ var IgnoredLineBegins []string = []string{"!", "["}
 
 var PACService PacService
 
-func init() {
-	PACService = newPACService()
+type pacService struct {
+	name          string
+	pacText       string
+	enableGFWList bool
 }
 
-func newPACService() PacService {
+func NewPACService(conf *config.Config) {
 	s := &pacService{
-		name: "pacService",
+		name:          "pacService",
+		enableGFWList: conf.Menu.EnableGFWList,
 	}
 	s.pacText = readPACFile()
 	if s.pacText == "" {
-		s.pacText = CreatePACFile()
+		s.pacText = CreatePACFile(s.enableGFWList)
 	}
-	return s
-}
-
-type pacService struct {
-	name    string
-	pacText string
+	PACService = s
 }
 
 // CreatePACTempFile implements PacService.
@@ -66,8 +64,14 @@ func (s *pacService) SaveUserRule(rule string) error {
 	if err != nil {
 		return err
 	}
-	s.pacText = CreatePACFile()
+	s.pacText = CreatePACFile(s.enableGFWList)
 	return nil
+}
+
+// SetEnableGFWList implements PacService.
+func (s *pacService) SetEnableGFWList(enableGFWList bool) {
+	s.enableGFWList = enableGFWList
+	s.pacText = CreatePACFile(s.enableGFWList)
 }
 
 func readPACFile() string {
@@ -97,24 +101,28 @@ func replacePACText(pacText string, dstProto string, raddr string) string {
 	return pacText
 }
 
-func CreatePACFile() string {
+func CreatePACFile(enableGFWList bool) string {
 	// Read file
 	abpText := string(resources.AbpData)
 	abpContent := strings.Split(abpText, "\n")
 	if abpContent == nil {
 		return ""
 	}
-	gfwlistBytes, _ := util.ReadFileAll(gfwlistFilename)
-	if gfwlistBytes == nil {
-		gfwlistBytes = getFileFromURL(gfwlistFilename, gfwlistURL)
+	rules := make([]string, 0)
+	if enableGFWList {
+		gfwlistBytes, _ := util.ReadFileAll(gfwlistFilename)
+		if gfwlistBytes == nil {
+			gfwlistBytes = getFileFromURL(gfwlistFilename, gfwlistURL)
+		}
+		gfwlistContent, err := util.DecodeBase64(gfwlistBytes, "\n")
+		if err != nil {
+			log.Println("Convert gfwlist to content failed")
+		} else {
+			log.Println("Convert gfwlist to content successful")
+		}
+		gfwlistRule := formatRule(gfwlistContent)
+		rules = append(rules, gfwlistRule...)
 	}
-	gfwlistContent, err := util.DecodeBase64(gfwlistBytes, "\n")
-	if err != nil {
-		log.Println("Convert gfwlist to content failed")
-	} else {
-		log.Println("Convert gfwlist to content successful")
-	}
-	gfwlistRule := formatRule(gfwlistContent)
 	// Splice gfwlist and user rule
 	userRuleContent := getContent(userRuleFilename)
 	if userRuleContent == nil {
@@ -125,15 +133,11 @@ func CreatePACFile() string {
 		log.Printf("Create %s successful\n", userRuleFilename)
 	} else {
 		userRule := formatRule(userRuleContent)
-		var count int = 0
-		for i := 0; i < len(userRule); i++ {
-			gfwlistRule = append(gfwlistRule, userRule[i])
-			count++
-		}
-		log.Printf("Append user rule %d", count)
+		rules = append(rules, userRule...)
+		log.Printf("Append user rule %d", len(userRule))
 	}
 	// Relace rule in abp.js
-	allRule := fmt.Sprintf(`["%s"]`, strings.Join(gfwlistRule, `","`))
+	allRule := fmt.Sprintf(`["%s"]`, strings.Join(rules, `","`))
 	for i, s := range abpContent {
 		if strings.Contains(s, ruleWord) {
 			abpContent[i] = strings.Replace(s, ruleWord, allRule, -1)
@@ -143,7 +147,7 @@ func CreatePACFile() string {
 	// Crate new pac.js
 	pacText := strings.Join(abpContent, "\n")
 	pacBytes := []byte(pacText)
-	err = util.CreateFile(PACFilename, pacBytes)
+	err := util.CreateFile(PACFilename, pacBytes)
 	if err != nil {
 		log.Printf("Create %s failed:%v\n", PACFilename, err)
 		return ""

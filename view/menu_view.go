@@ -99,7 +99,10 @@ func (v *menuView) newSettingMenuItem(parent vcl.IComponent, index *int, name, t
 	menu := v.controller.GetMenu()
 	autoStartMenuItem := newMenuItem(settingMenuItem, &subIndex, settingAutoStartName, settingAutoStartText, v.onSettingAutoStartClick)
 	autoStartMenuItem.SetChecked(menu.AutoStart)
+	enableGFWListMenuItem := newMenuItem(settingMenuItem, &subIndex, settingEnableGFWListName, settingEnableGFWListText, v.onEnableGFWListClick)
+	enableGFWListMenuItem.SetChecked(menu.EnableGFWList)
 	settingMenuItem.Add(autoStartMenuItem)
+	settingMenuItem.Add(enableGFWListMenuItem)
 	return settingMenuItem
 }
 
@@ -137,6 +140,15 @@ func (v *menuView) onSettingAutoStartClick(sender vcl.IObject) {
 	if err != nil {
 		vcl.ShowMessage("Error toggle auto start: " + err.Error())
 	}
+}
+
+func (v *menuView) onEnableGFWListClick(sender vcl.IObject) {
+	menuItem := vcl.AsMenuItem(sender)
+	menu := v.controller.GetMenu()
+	checked := !menu.EnableGFWList
+	menuItem.SetChecked(checked)
+	menu.EnableGFWList = checked
+	v.controller.ToggleEnableGFWList()
 }
 
 func (v *menuView) onAboutMenuItemClick(sender vcl.IObject) {
